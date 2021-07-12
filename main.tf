@@ -24,22 +24,22 @@ provider "aws" {
 # Resource tag name arguments created by interpolating 
 # the 'resource name'-'environment value'-'name value'
 # from global variable "project".
-# locals {
-#   vpc_name        = "vpc-${var.project["environment"]}-${var.project["name"]}"
-#   igw_name        = "igw-${var.project["environment"]}-${var.project["name"]}"
-#   seg_name        = "seg-${var.project["environment"]}-${var.project["name"]}"
-#   snt_public_name = "snt-${var.project["environment"]}-${var.project["name"]}"
-#   rtb_public_name = "rtb-${var.project["environment"]}-${var.project["name"]}"
-#   nic_public_name = "nic-${var.project["environment"]}-${var.project["name"]}"
-#   eip_name        = "eip-${var.project["environment"]}-${var.project["name"]}"
-# }
+locals {
+  vpc_name        = "vpc-${var.project["environment"]}-${var.project["name"]}"
+  igw_name        = "igw-${var.project["environment"]}-${var.project["name"]}"
+  seg_name        = "seg-${var.project["environment"]}-${var.project["name"]}"
+  snt_public_name = "snt-${var.project["environment"]}-${var.project["name"]}"
+  rtb_public_name = "rtb-${var.project["environment"]}-${var.project["name"]}"
+  nic_public_name = "nic-${var.project["environment"]}-${var.project["name"]}"
+  eip_name        = "eip-${var.project["environment"]}-${var.project["name"]}"
+}
 
 resource "aws_vpc" "vpc_multi_node" {
   cidr_block           = var.netblock["network"]
   instance_tenancy     = "default"
 
   tags = {
-    Name = local.vpc_name
+    Name = ""
   }
 }
 
@@ -50,7 +50,7 @@ resource "aws_subnet" "snt_public" {
   availability_zone = var.region["uw1b"]
 
   tags = {
-    Name = local.snt_public_name
+    Name = ""
   }
 }
 
@@ -69,36 +69,7 @@ resource "aws_internet_gateway" "igw_multi_node" {
   vpc_id = aws_vpc.vpc_multi_node.id
 
   tags = {
-    Name = local.igw_name
-  }
-}
-
-resource "aws_nat_gateway" "ngw_multi_node" {
-  depends_on    = [aws_internet_gateway.igw_multi_node]
-  allocation_id = aws_eip.eip_nodes.id
-  subnet_id     = aws_subnet.snt_public.id
-
-    tags = {
-      Name = ""
-  }
-}
-
-# Elastic IPs
-resource "aws_eip" "eip_inband" {
-  depends_on = [aws_internet_gateway.igw_multi_node]
-  vpc        = true
-
-  tags = {
-    "Name" = ""
-  }
-}
-
-resource "aws_eip" "eip_nodes" {
-  depends_on = [aws_internet_gateway.igw_multi_node]
-  vpc        = true
-
-  tags = {
-    "Name" = ""
+    Name = ""
   }
 }
 
@@ -119,8 +90,8 @@ resource "aws_route_table" "rta_private" {
   vpc_id = aws_vpc.vpc_multi_node.id
 
   route {
-    cidr_block     = var.netblock["default"]
-    nat_gateway_id = aws_nat_gateway.ngw_multi_node.id
+    cidr_block  = var.netblock["default"]
+    network_interface_id = aws_network_interface.nic_02.id
   }
 
   tags = {
@@ -177,12 +148,68 @@ resource "aws_security_group" "seg_multi_node" {
   }
 
   tags = {
-    Name = local.seg_name
+    Name = ""
   }
 }
 
-# INSIDE MACHINE
+# Network Interfaces
+resource "aws_network_interface" "nic_01" {
+  subnet_id       = aws_subnet.snt_public.id
+  security_groups = [aws_security_group.seg_multi_node.id]
+  source_dest_check = false
+  private_ips     = ["10.0.1.100"]
+
+  tags = {
+    Name = ""
+  }
+}
+
+resource "aws_network_interface" "nic_02" {
+  subnet_id       = aws_subnet.snt_private.id
+  security_groups = [aws_security_group.seg_multi_node.id]
+  source_dest_check = false
+  private_ips     = ["10.0.2.100"]
+
+  tags = {
+    Name = ""
+  }
+}
+
+# Elastic IPs
+resource "aws_eip" "eip_inband" {
+  depends_on = [aws_internet_gateway.igw_multi_node]
+  vpc        = true
+  network_interface = aws_network_interface.nic_01.id
+
+  tags = {
+    "Name" = ""
+  }
+}
+
+# HUB MACHINE
 resource "aws_instance" "ec2_01" {
+  ami               = var.vm1["ami"]
+  instance_type     = var.vm1["instance_type"]
+  availability_zone = var.vm1["availability_zone"]
+  key_name          = var.access_key
+  
+  network_interface {
+    device_index         = 0
+    network_interface_id = aws_network_interface.nic_01.id
+  }
+
+   network_interface {
+    device_index         = 1
+    network_interface_id = aws_network_interface.nic_02.id
+  }
+
+  tags = {
+    Name = var.vm1["name"]
+  }
+}
+
+# PRIVATE MACHINE
+resource "aws_instance" "ec2_02" {
   ami               = var.vm0["ami"]
   instance_type     = var.vm0["instance_type"]
   availability_zone = var.vm0["availability_zone"]
