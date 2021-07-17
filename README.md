@@ -9,8 +9,8 @@ This project is a custom infrastructure built with
 to deploy an Amazon Linux 2 server to act as a 
 [bastion-server](https://aws.amazon.com/quickstart/architecture/linux-bastion/),
 one CSR1000v running IOS XE 17.3.3 and our newest release, a Catalyst 8000v 
-running IOS XE 17.4.1b. Besides you will have a pool of multiple instances of 
-common interest that you can customize and deploy based on your needs. 
+running IOS XE 17.4.1b. Besides you will have a pool of ec2 instances of common 
+interest that you can customize and deploy based on your needs. 
 
 ## Prerequisites
 
