@@ -8,7 +8,7 @@ This project is a custom infrastructure built with
 [Terraform Language (HCL)](https://www.terraform.io/docs/language/index.html) 
 to deploy an Amazon Linux 2 server to act as a 
 [bastion-server](https://aws.amazon.com/quickstart/architecture/linux-bastion/),
-one CSR100v running IOS XE 17.3.3 and our newest lunch, a Catalyst 8000v 
+one CSR1000v running IOS XE 17.3.3 and our newest lunch, a Catalyst 8000v 
 running IOS XE 17.4.1b. Besides you will have a pool of multiple instances of 
 common interest that you can customize and deploy based on your needs. 
 
@@ -89,7 +89,7 @@ ssh -i "path_to_your_ssh_key" ec2-user@public_ip_address_given
 ```bash
 terraform destroy
 ```
-*The Terraform apply and destroy plans will show to you by before initialization. 
+*The Terraform apply and destroy plans will show to you before initialization. 
 Type yes if you are good, otherwise Terraform will not proceed further.*
 
 ## License
